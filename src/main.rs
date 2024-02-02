@@ -19,6 +19,10 @@ struct Args {
     /// Genomic region
     #[arg(short, long)]
     region: String,
+
+    /// Use values mode
+    #[arg(short, long)]
+    values: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,30 +33,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let region = parse_region(&args.region)?;
 
     let mut reader = BigWigRead::open(f)?;
-    //match reader.get_interval(&region.chrom_name, region.start, region.end) {
-    //    Ok(intervals) => {
-    //        for interval in intervals {
-    //            match interval {
-    //                Ok(value) => {
-    //                    println!("{}\t{}", value.start, value.value);
-    //                },
-    //                Err(e) => {
-    //                    eprintln!("Error: {}", e);
-    //                },
-    //            }
-    //        }
-    //    },
-    //    Err(e) => {
-    //        eprintln!("Error: {}", e);
-    //    },
-    //}
 
-    let values = reader.values(&region.chrom_name, region.start, region.end)?;
+    if args.values {
+        let values = reader.values(&region.chrom_name, region.start, region.end)?;
 
-    let mut pos = region.start;
-    for value in values {
-        println!("{}\t{:.1}", pos, value);
-        pos += 1;
+        let mut pos = region.start;
+        for value in values {
+            println!("{}\t{:.1}", pos, value);
+            pos += 1;
+        }
+    }
+    else {
+        match reader.get_interval(&region.chrom_name, region.start, region.end) {
+            Ok(intervals) => {
+                for interval in intervals {
+                    match interval {
+                        Ok(value) => {
+                            println!("{}\t{:.1}", value.start, value.value);
+                        },
+                        Err(e) => {
+                            eprintln!("Error: {}", e);
+                        },
+                    }
+                }
+            },
+            Err(e) => {
+                eprintln!("Error: {}", e);
+            },
+        }
     }
     
     Ok(())
